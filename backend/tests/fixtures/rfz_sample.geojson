@@ -1,0 +1,75 @@
+{
+  "type": "FeatureCollection",
+  "name": "rfz_sample_shatin",
+  "metadata": {
+    "purpose": "Synthetic test fixture for the rules engine. Mirrors the schema of the real eSUA snapshot (data/rfz/, 286 zones): Polygon/MultiPolygon features with name / effectiveDateTime / description properties. Coordinates are invented around Sha Tin (~22.38N, 114.19E) and do NOT represent real restricted flying zones."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "RFZ-TEST-001",
+        "name": "Sha Tin Central (test)",
+        "effectiveDateTime": "01/01/2026 00:00 - until further notice",
+        "description": "Effective from 01/01/2026 00:00 - until further notice",
+        "description2": "Designated by Director-General of Civil Aviation (synthetic fixture)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.185, 22.375],
+            [114.195, 22.375],
+            [114.195, 22.385],
+            [114.185, 22.385],
+            [114.185, 22.375]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "RFZ-TEST-002",
+        "name": "Sha Tin Racecourse (test)",
+        "effectiveDateTime": "01/01/2026 00:00 - until further notice",
+        "description": "Effective from 01/01/2026 00:00 - until further notice",
+        "description2": "Designated by Director-General of Civil Aviation (synthetic fixture)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.2, 22.395],
+            [114.215, 22.395],
+            [114.215, 22.408],
+            [114.2, 22.408],
+            [114.2, 22.395]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "RFZ-TEST-003",
+        "name": "Tai Wai (test)",
+        "effectiveDateTime": "01/01/2026 00:00 - until further notice",
+        "description": "Effective from 01/01/2026 00:00 - until further notice",
+        "description2": "Designated by Director-General of Civil Aviation (synthetic fixture)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.17, 22.37],
+            [114.178, 22.37],
+            [114.178, 22.376],
+            [114.17, 22.376],
+            [114.17, 22.37]
+          ]
+        ]
+      }
+    }
+  ]
+}
