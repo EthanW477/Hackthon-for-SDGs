@@ -15,3 +15,6 @@ poi/*
 
 regulations/*
 !regulations/.gitkeep
+
+weather/*
+!weather/.gitkeep
