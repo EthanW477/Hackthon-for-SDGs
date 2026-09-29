@@ -1,3 +1,15 @@
-from app.simulator.tracks import generate_tracks, stream_tracks
+from app.simulator.tracks import (
+    FaultSpec,
+    Simulator,
+    generate_tracks,
+    parse_fault_specs,
+    stream_tracks,
+)
 
-__all__ = ["generate_tracks", "stream_tracks"]
+__all__ = [
+    "FaultSpec",
+    "Simulator",
+    "generate_tracks",
+    "parse_fault_specs",
+    "stream_tracks",
+]
