@@ -1,0 +1,17 @@
+# Dataset files stay out of git — fetched by scripts/download_data.sh.
+# Keep the directory skeleton via .gitkeep.
+
+tiles/*
+!tiles/.gitkeep
+
+rfz/*
+!rfz/.gitkeep
+
+population/*
+!population/.gitkeep
+
+poi/*
+!poi/.gitkeep
+
+regulations/*
+!regulations/.gitkeep

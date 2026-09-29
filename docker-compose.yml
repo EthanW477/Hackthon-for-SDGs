@@ -1,0 +1,22 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_* vars are inlined at build time — browser-side calls
+        # hit the host-mapped backend port.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:43124}
+        # Optional: Cesium ion token. Without it the map falls back to OSM imagery.
+        NEXT_PUBLIC_CESIUM_ION_TOKEN: ${NEXT_PUBLIC_CESIUM_ION_TOKEN:-}
+    ports:
+      - "43123:43123"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "43124:43124"
+    environment:
+      # Optional: LLM credentials for the Phase-2 AI layer. Phase-0 stubs run without them.
+      LLM_API_KEY: ${LLM_API_KEY:-}
