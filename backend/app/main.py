@@ -1,15 +1,17 @@
 """UTM Copilot backend — API entrypoint.
 
-Phase-0: every contract endpoint is a working stub returning mock data, so
-frontend and AI integration can proceed in parallel against the contract.
-See docs/dev-readme.md §5 and project-plan §4.7 for the API contract.
+Phase-0/1: contract endpoints are working stubs so frontend and AI
+integration can proceed in parallel against the contract — except the
+tracks/airspace endpoints, which are backed by the live trajectory
+simulator (app/simulator/, project-plan §4.3 / step 1.4).
+See docs/dev-readme.md §5 for the API contract.
 """
 
 import json
 import uuid
 from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -28,7 +30,7 @@ from app.schemas import (
     ScenarioRunResponse,
     Suggestion,
 )
-from app.simulator import generate_tracks, stream_tracks
+from app.simulator import generate_tracks, parse_fault_specs, stream_tracks
 
 app = FastAPI(title="UTM Copilot API", version="0.1.0")
 
@@ -92,19 +94,36 @@ def flight_plans_check(req: FlightPlanCheckRequest) -> FlightPlanCheckResponse:
 
 @app.get("/api/v1/airspace", response_model=AirspaceResponse)
 def airspace() -> AirspaceResponse:
-    """Current airspace picture: restrictions + a snapshot of mock tracks."""
+    """Current airspace picture: live simulator snapshot + stubbed context.
+
+    TODO(phase-1/2): active_restrictions and rfz_count stay stubbed until the
+    RFZ GeoJSON layer is wired into the rules engine.
+    TODO(phase-3): weather stays stubbed ("fine") until the HKO open-data
+    feed lands for weather scenarios.
+    """
     return AirspaceResponse(
         active_restrictions=["AC-014", "AC-015"],
-        active_tracks=generate_tracks(count=5),
+        active_tracks=generate_tracks(count=8),
     )
 
 
 @app.get("/api/v1/tracks/stream")
-async def tracks_stream() -> StreamingResponse:
-    """Server-sent events stream of simulated tracks (1 Hz)."""
+async def tracks_stream(count: int = 8, faults: str | None = None) -> StreamingResponse:
+    """Server-sent events stream of simulated tracks (1 Hz).
+
+    Query params:
+    - count: number of aircraft (clamped to 1–10, default 8).
+    - faults: fault-injection specs, e.g.
+      "gps_loss:SIM-002@30+15|deviation:SIM-004@60+20" — starts are seconds
+      from stream start; see app.simulator.parse_fault_specs for the format.
+    """
+    try:
+        fault_specs = parse_fault_specs(faults) if faults else []
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     async def events() -> AsyncGenerator[str, None]:
-        async for tracks in stream_tracks(count=5, interval_s=1.0):
+        async for tracks in stream_tracks(count=count, interval_s=1.0, faults=fault_specs):
             payload = [t.model_dump() for t in tracks]
             yield f"data: {json.dumps(payload)}\n\n"
 
