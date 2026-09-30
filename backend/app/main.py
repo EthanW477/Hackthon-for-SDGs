@@ -128,7 +128,16 @@ async def tracks_stream(count: int = 8, faults: str | None = None) -> StreamingR
             payload = [t.model_dump() for t in tracks]
             yield f"data: {json.dumps(payload)}\n\n"
 
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        # no-cache + X-Accel-Buffering keep proxies (e.g. the demo tunnel) from
+        # buffering the event stream instead of flushing each event.
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/api/v1/scenarios", response_model=ScenarioCreateResponse, status_code=201)

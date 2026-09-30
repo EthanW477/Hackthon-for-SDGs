@@ -2,9 +2,9 @@
  * RFZ (Restricted Flying Zone) map layer — plan step 1.2: red, semi-transparent,
  * toggleable polygons.
  *
- * Data source: a synthetic sample shipped at public/sample-rfz.geojson while the
- * real 286-zone set is being fetched into data/rfz/ by the data pipeline.
- * Swapping to the real file (or a backend endpoint) is a one-line change to
+ * Data source: the real CAD/ESUA snapshot (290 polygons, 252 named zones)
+ * exported from data/rfz/ to public/rfz/hong-kong-rfz.geojson. Switching back
+ * to the synthetic sample or a backend endpoint is a one-line change to
  * RFZ_SOURCE_URL below — the loader only needs a GeoJSON FeatureCollection of
  * Polygon/MultiPolygon features.
  */
@@ -13,9 +13,9 @@ import type { CustomDataSource, Viewer } from "cesium";
 export type CesiumModule = typeof import("cesium");
 
 // --- the one-line swap -------------------------------------------------------
-export const RFZ_SOURCE_URL = "/sample-rfz.geojson";
-// Real data, once available — pick one:
-// export const RFZ_SOURCE_URL = "/rfz/hong-kong-rfz.geojson"; // static export of data/rfz
+export const RFZ_SOURCE_URL = "/rfz/hong-kong-rfz.geojson"; // real 290-zone CAD/ESUA snapshot
+// Alternatives:
+// export const RFZ_SOURCE_URL = "/sample-rfz.geojson"; // synthetic sample
 // export const RFZ_SOURCE_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/rfz`; // backend endpoint
 // -----------------------------------------------------------------------------
 
