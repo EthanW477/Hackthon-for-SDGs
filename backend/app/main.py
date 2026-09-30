@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from app.rules_engine import check_flight_plan
+from app.rules_engine import evaluate_flight_plan
 from app.schemas import (
     AirspaceResponse,
     ChatRequest,
@@ -73,8 +73,9 @@ def chat(req: ChatRequest) -> ChatResponse:
 
 @app.post("/api/v1/flight-plans/check", response_model=FlightPlanCheckResponse)
 def flight_plans_check(req: FlightPlanCheckRequest) -> FlightPlanCheckResponse:
-    """Run the rule engine over a proposed route."""
-    violations = check_flight_plan(req.route_geojson, req.params)
+    """Run the real rule engine (5 CAD-derived rules) over a proposed route."""
+    evaluation = evaluate_flight_plan(req.route_geojson, req.params)
+    violations = evaluation.violations
     suggestions: list[Suggestion] = []
     if violations:
         # TODO(phase-2, step 2.4): real counterfactual search (perturb ->
