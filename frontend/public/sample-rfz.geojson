@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "name": "sample-rfz-shatin",
+  "metadata": {
+    "description": "SYNTHETIC sample Restricted Flying Zones around Sha Tin for frontend development. Replace with the real 286-zone set (data/rfz/) once the data pipeline lands.",
+    "source": "hand-crafted, not official CAD data",
+    "created": "2026-09-29"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "RFZ-SAMPLE-001",
+      "properties": {
+        "id": "RFZ-SAMPLE-001",
+        "name": "Sha Tin Town Centre (sample)",
+        "category": "populated_area",
+        "remarks": "Synthetic zone over Sha Tin town centre / New Town Plaza for UI development."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.183, 22.3745],
+            [114.1975, 22.3745],
+            [114.1975, 22.3865],
+            [114.183, 22.3865],
+            [114.183, 22.3745]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RFZ-SAMPLE-002",
+      "properties": {
+        "id": "RFZ-SAMPLE-002",
+        "name": "Sha Tin Racecourse (sample)",
+        "category": "event_venue",
+        "remarks": "Synthetic zone over the racecourse and Penfold Park for UI development."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.1975, 22.3935],
+            [114.2095, 22.3955],
+            [114.2125, 22.403],
+            [114.2055, 22.4085],
+            [114.1955, 22.404],
+            [114.1975, 22.3935]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RFZ-SAMPLE-003",
+      "properties": {
+        "id": "RFZ-SAMPLE-003",
+        "name": "Hong Kong Science Park (sample)",
+        "category": "critical_infrastructure",
+        "remarks": "Synthetic zone over the Science Park waterfront for UI development."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [114.205, 22.4205],
+            [114.2165, 22.4205],
+            [114.2185, 22.4295],
+            [114.207, 22.4315],
+            [114.205, 22.4205]
+          ]
+        ]
+      }
+    }
+  ]
+}

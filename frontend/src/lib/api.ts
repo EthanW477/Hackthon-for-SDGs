@@ -31,10 +31,32 @@ export interface ChatResponse {
   citations: Citation[];
 }
 
+export interface FlightPlanParams {
+  aircraft_category?: "cat_a" | "cat_b";
+  max_altitude_ft?: number;
+  within_visual_line_of_sight?: boolean;
+  operator?: string | null;
+}
+
+export interface RuleViolation {
+  rule_id: string;
+  regulation_ref: string;
+  message: string;
+  /** Index of the offending route segment (0-based), when applicable. */
+  segment_index?: number | null;
+}
+
+export interface Suggestion {
+  kind: "reroute" | "lower_altitude" | "reschedule" | "change_aircraft" | (string & {});
+  description: string;
+  /** Patched route (GeoJSON LineString) to render in green, when provided. */
+  patched_route_geojson?: Record<string, unknown> | null;
+}
+
 export interface FlightPlanCheckResponse {
   verdict: "approved" | "rejected";
-  violations: { rule_id: string; regulation_ref: string; message: string }[];
-  suggestions: { kind: string; description: string }[];
+  violations: RuleViolation[];
+  suggestions: Suggestion[];
 }
 
 export interface AirspaceResponse {
@@ -68,11 +90,12 @@ export async function sendChat(message: string): Promise<ChatResponse> {
 
 export async function checkFlightPlan(
   routeGeoJson: Record<string, unknown>,
+  params: FlightPlanParams = {},
 ): Promise<FlightPlanCheckResponse> {
   const res = await fetch(`${API_BASE}/api/v1/flight-plans/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ route_geojson: routeGeoJson, params: {} }),
+    body: JSON.stringify({ route_geojson: routeGeoJson, params }),
   });
   if (!res.ok) throw new Error(`flight plan check failed: ${res.status}`);
   return res.json();
