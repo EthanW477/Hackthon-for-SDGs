@@ -66,6 +66,121 @@ export interface AirspaceResponse {
   active_tracks: Track[];
 }
 
+// ---------- Phase 3: scenarios, test reports, trilingual briefs ----------
+
+export interface InjectedEvent {
+  kind: "gps_loss" | "rfz_intrusion" | "off_course" | "weather_shift" | "comms_loss";
+  at_second: number;
+  duration_s: number;
+  target_track_id?: string | null;
+  detail?: string | null;
+}
+
+export interface ExpectedBehavior {
+  check: string;
+  pass_criteria?: string | null;
+}
+
+export interface Scenario {
+  area: string;
+  time_window: string;
+  weather: string;
+  traffic_density: "low" | "medium" | "high";
+  aircraft_count: number;
+  injected_events: InjectedEvent[];
+  expected_system_behavior: ExpectedBehavior[];
+}
+
+export interface ScenarioCreateResponse {
+  id: string;
+  scenario_json: Scenario;
+  checklist: string[];
+  warnings: string[];
+}
+
+export interface CheckResult {
+  check: string;
+  status: "pass" | "fail" | "pending";
+  evidence?: string | null;
+  regulation_ref?: string | null;
+}
+
+export interface TimelineEvent {
+  t: number;
+  kind:
+    | "scenario_start"
+    | "fault_injected"
+    | "fault_detected"
+    | "fault_recovered"
+    | "advisory"
+    | "violation"
+    | "weather"
+    | "note";
+  message: string;
+  track_id?: string | null;
+}
+
+export interface ObservedViolation {
+  rule_id: string;
+  regulation_ref: string;
+  message: string;
+  track_id?: string | null;
+  at_second?: number | null;
+}
+
+export interface ReportCitation {
+  regulation_id: string;
+  section?: string | null;
+  excerpt?: string | null;
+}
+
+export interface ReportSummary {
+  total_checks: number;
+  passed: number;
+  failed: number;
+  pending: number;
+  pass_rate: number;
+  violations_count: number;
+  advisories_count: number;
+  events_count: number;
+  duration_s: number;
+  aircraft_count: number;
+}
+
+export interface TestReport {
+  report_id: string;
+  scenario_id: string;
+  generated_at: string;
+  description: string;
+  scenario: Scenario;
+  summary: ReportSummary;
+  checks: CheckResult[];
+  violations: ObservedViolation[];
+  timeline: TimelineEvent[];
+  citations: ReportCitation[];
+  log_excerpt: string[];
+  notes: string[];
+}
+
+export interface ScenarioRunResponse {
+  scenario_id: string;
+  status: "completed" | "failed";
+  report_url: string;
+  log_excerpt: string[];
+  report: TestReport | null;
+  markdown: string | null;
+}
+
+export type BriefAudience = "cad_technical" | "legco_policy" | "community";
+export type BriefLang = "zh" | "en" | "yue";
+
+export interface BriefResponse {
+  scenario_id: string;
+  audience: string;
+  briefs: Record<BriefLang, string>;
+  generated_with: "llm" | "mixed" | "fallback";
+}
+
 export interface Track {
   track_id: string;
   lon: number;
@@ -113,4 +228,42 @@ export async function getAirspace(): Promise<AirspaceResponse> {
 /** SSE endpoint URL — consume with `new EventSource(tracksStreamUrl())`. */
 export function tracksStreamUrl(): string {
   return `${API_BASE}/api/v1/tracks/stream`;
+}
+
+// ---------- Phase 3 endpoints ----------
+
+export async function createScenario(description: string): Promise<ScenarioCreateResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/scenarios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) throw new Error(`scenario generation failed: ${res.status}`);
+  return res.json();
+}
+
+export async function runScenario(scenarioId: string): Promise<ScenarioRunResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/scenarios/${scenarioId}/run`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`scenario run failed: ${res.status}`);
+  return res.json();
+}
+
+/** Direct export URL (browser download) for the latest report. */
+export function reportExportUrl(scenarioId: string, format: "json" | "markdown"): string {
+  return `${API_BASE}/api/v1/scenarios/${scenarioId}/report?format=${format}`;
+}
+
+export async function createBrief(
+  scenarioId: string,
+  audience: BriefAudience,
+): Promise<BriefResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/scenarios/${scenarioId}/brief`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ audience }),
+  });
+  if (!res.ok) throw new Error(`brief generation failed: ${res.status}`);
+  return res.json();
 }

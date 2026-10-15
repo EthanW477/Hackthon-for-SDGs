@@ -29,7 +29,7 @@ def _load_backend_dotenv() -> None:
 _load_backend_dotenv()
 
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -38,6 +38,8 @@ from app.rag import query as rag_query
 from app.rules_engine import evaluate_flight_plan
 from app.schemas import (
     AirspaceResponse,
+    BriefRequest,
+    BriefResponse,
     ChatRequest,
     ChatResponse,
     FlightPlanCheckRequest,
@@ -46,13 +48,23 @@ from app.schemas import (
     RegulationSearchResponse,
     ReportRequest,
     ReportResponse,
-    Scenario,
     ScenarioCreateRequest,
     ScenarioCreateResponse,
     ScenarioRunResponse,
     Suggestion,
 )
 from app.ai.agent import run_chat
+from app.scenarios import (
+    generate_briefs,
+    generate_scenario,
+    get_report,
+    get_scenario,
+    redact_text,
+    render_markdown,
+    run_scenario,
+    save_report,
+    save_scenario,
+)
 from app.simulator import generate_tracks, parse_fault_specs, stream_tracks
 
 app = FastAPI(title="UTM Copilot API", version="0.1.0")
@@ -66,9 +78,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory scenario store — fine for Phase 0 stubs; Phase 3 decides on real
-# persistence once the scenario executor lands.
-SCENARIOS: dict[str, Scenario] = {}
+# Scenario/report persistence lives in app.scenarios.store (in-memory, Phase-3).
 
 
 @app.get("/api/v1/health")
@@ -178,42 +188,100 @@ async def tracks_stream(count: int = 8, faults: str | None = None) -> StreamingR
 def scenarios_create(req: ScenarioCreateRequest) -> ScenarioCreateResponse:
     """Turn a plain-language description into a scenario JSON + checklist.
 
-    TODO(phase-3, step 3.1): LLM generation with schema validation + retry.
+    Phase 3 (step 3.1): LLM drafts the JSON, pydantic validates it, invalid
+    output is retried automatically; a disclosed deterministic fallback keeps
+    the flow alive if no LLM is reachable.
     """
-    scenario = Scenario(
-        time_window="2026-10-20T09:00:00+08:00/PT30M",
-        weather="typhoon_approaching" if "typhoon" in req.description.lower() else "fine",
-        traffic_density="high",
-        aircraft_count=10,
-    )
+    description = redact_text(req.description)
+    result = generate_scenario(description)
     scenario_id = uuid.uuid4().hex[:8]
-    SCENARIOS[scenario_id] = scenario
+    save_scenario(scenario_id, result.scenario, description, result.checklist)
     return ScenarioCreateResponse(
         id=scenario_id,
-        scenario_json=scenario,
-        checklist=[
-            "System raises lost-link alert within 30 s of GPS loss",
-            "Remaining aircraft receive avoidance advisories",
-        ],
+        scenario_json=result.scenario,
+        checklist=result.checklist,
+        warnings=result.warnings,
+    )
+
+
+@app.get("/api/v1/scenarios/{scenario_id}", response_model=ScenarioCreateResponse)
+def scenarios_get(scenario_id: str) -> ScenarioCreateResponse:
+    """Fetch a previously generated scenario (for the report panel)."""
+    stored = get_scenario(scenario_id)
+    if stored is None:
+        raise HTTPException(status_code=404, detail=f"unknown scenario {scenario_id}")
+    return ScenarioCreateResponse(
+        id=stored.id, scenario_json=stored.scenario, checklist=stored.checklist
     )
 
 
 @app.post("/api/v1/scenarios/{scenario_id}/run", response_model=ScenarioRunResponse)
 def scenarios_run(scenario_id: str) -> ScenarioRunResponse:
-    """Execute a stored scenario through the simulator and return a report.
+    """Execute a stored scenario through the simulator and return a structured
+    test report (pass rate, violations with clause refs, timeline events).
 
-    TODO(phase-3, step 3.2): real executor + LLM-drafted test report.
+    Phase 3 (step 3.2): deterministic executor + monitor; verdicts never
+    depend on the LLM.
     """
-    scenario = SCENARIOS.get(scenario_id)
-    log = (
-        [f"loaded scenario {scenario_id}: {scenario.aircraft_count} aircraft"]
-        if scenario
-        else [f"scenario {scenario_id} not found; ran default mock scenario"]
+    stored = get_scenario(scenario_id)
+    if stored is None:
+        raise HTTPException(status_code=404, detail=f"unknown scenario {scenario_id}")
+    report = run_scenario(
+        scenario_id,
+        stored.scenario,
+        description=stored.description,
+        checklist=stored.checklist,
     )
+    save_report(scenario_id, report)
     return ScenarioRunResponse(
         scenario_id=scenario_id,
-        report_url=f"/api/v1/reports/{scenario_id}",
-        log_excerpt=log + ["simulation tick 0..1800 complete", "0 conflicts, 0 alerts"],
+        report_url=f"/api/v1/scenarios/{scenario_id}/report",
+        log_excerpt=report.log_excerpt,
+        report=report,
+        markdown=render_markdown(report),
+    )
+
+
+@app.get("/api/v1/scenarios/{scenario_id}/report")
+def scenarios_report(scenario_id: str, format: str = Query("json", pattern="^(json|markdown)$")):
+    """Export the latest test report for a scenario as JSON or Markdown."""
+    report = get_report(scenario_id)
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"no report for scenario {scenario_id} — run it first",
+        )
+    if format == "markdown":
+        return Response(
+            content=render_markdown(report),
+            media_type="text/markdown; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="utm-report-{scenario_id}.md"'
+            },
+        )
+    return report
+
+
+@app.post("/api/v1/scenarios/{scenario_id}/brief", response_model=BriefResponse)
+def scenarios_brief(scenario_id: str, req: BriefRequest) -> BriefResponse:
+    """Generate trilingual (zh/en/yue) markdown briefs from the latest report.
+
+    Phase 3 (step 3.3): three fixed audience templates (CAD technical
+    summary / LegCo policy brief / community notice) narrated by the LLM from
+    the structured report only; deterministic offline template as fallback.
+    """
+    report = get_report(scenario_id)
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"no report for scenario {scenario_id} — run it first",
+        )
+    briefs, generated_with = generate_briefs(req.audience, report)
+    return BriefResponse(
+        scenario_id=scenario_id,
+        audience=req.audience,
+        briefs=briefs,
+        generated_with=generated_with,
     )
 
 

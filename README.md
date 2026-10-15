@@ -4,7 +4,7 @@
 
 Built for **Hack4SDG 2026, Track 1: Green Transport & Smart Mobility**. Anyone can talk to a UTM system in plain language: ask why a flight plan was rejected (with regulation citations and fix suggestions), generate test scenarios from a sentence, and auto-produce reports and plain-language briefs. The LLM is the dispatcher; the rules engine and data do the real work.
 
-The app: a 3D map of Hong Kong on the left, a chat panel on the right, a report panel below.
+The app: a 3D map of Hong Kong on the left; the right panel has two tabs — the chat assistant and the Scenario Lab (Phase 3): one plain-language sentence → test-scenario JSON + checklist → one-click simulator run → structured test report → trilingual (中/EN/粵語) briefs for CAD, LegCo, and community audiences.
 
 ## Architecture
 
@@ -65,6 +65,21 @@ The regulation library (20 CAD circulars, clause-level chunks, BAAI/bge-m3
 embeddings + Chroma) powers `GET /api/v1/regulations/search?q=...&k=5` and
 the chat layer's citations. First run downloads the ~2 GB embedding model;
 the store itself is git-ignored and rebuilt by the ingest script.
+
+### Phase 3 API (scenarios · reports · briefs)
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/v1/scenarios` | NL description → scenario JSON + checklist (LLM → schema validation → auto-retry; disclosed heuristic fallback) |
+| `GET /api/v1/scenarios/{id}` | Fetch a generated scenario |
+| `POST /api/v1/scenarios/{id}/run` | Execute through the simulator → structured report (pass rate, violations with clause refs, timeline) |
+| `GET /api/v1/scenarios/{id}/report?format=json\|markdown` | Export the latest report |
+| `POST /api/v1/scenarios/{id}/brief` | Trilingual (zh/en/yue) brief per audience: `cad_technical` / `legco_policy` / `community` |
+
+Checklist verdicts are computed by deterministic code probes against the
+simulated track picture — never by the LLM. Anything the simulator cannot
+observe is honestly marked `pending`. API keys are scrubbed from every
+response (`app/scenarios/redact.py`).
 
 Optional env vars: `NEXT_PUBLIC_CESIUM_ION_TOKEN` (Cesium ion imagery; falls back to plain OSM tiles without it), `LLM_API_KEY` (Phase-2 AI layer; Phase-0 stubs run without it).
 
