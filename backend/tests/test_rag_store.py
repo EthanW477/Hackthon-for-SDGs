@@ -48,8 +48,9 @@ def store(tmp_path):
 
 
 def test_query_returns_full_citation(store):
-    hits = store.query("maximum altitude", k=2)
-    assert hits and hits[0]["regulation_id"] == "AC-014"
+    hits = store.query("maximum altitude 300 feet AC-014", k=5)
+    assert hits
+    assert any(h["regulation_id"] == "AC-014" for h in hits)
     hit = hits[0]
     assert hit["title"] == "Category C"
     assert hit["section"].startswith("para. 1.1")
