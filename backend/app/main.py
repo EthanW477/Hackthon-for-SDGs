@@ -11,10 +11,12 @@ import json
 import uuid
 from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from app.rag import RegulationStoreNotReady
+from app.rag import query as rag_query
 from app.rules_engine import evaluate_flight_plan
 from app.schemas import (
     AirspaceResponse,
@@ -22,6 +24,8 @@ from app.schemas import (
     ChatResponse,
     FlightPlanCheckRequest,
     FlightPlanCheckResponse,
+    RegulationExcerpt,
+    RegulationSearchResponse,
     ReportRequest,
     ReportResponse,
     Scenario,
@@ -90,6 +94,26 @@ def flight_plans_check(req: FlightPlanCheckRequest) -> FlightPlanCheckResponse:
         verdict="rejected" if violations else "approved",
         violations=violations,
         suggestions=suggestions,
+    )
+
+
+@app.get("/api/v1/regulations/search", response_model=RegulationSearchResponse)
+def regulations_search(
+    q: str = Query(..., min_length=1, description="natural-language regulation question"),
+    k: int = Query(5, ge=1, le=20),
+) -> RegulationSearchResponse:
+    """Search the CAD regulation vector library (20 circulars, step 2.1).
+
+    Returns top-k chunks with full citations (circular no., title, clause,
+    page span, verbatim excerpt) — the citation source for LLM answers.
+    503 until the library is ingested (scripts/ingest_regulations.py).
+    """
+    try:
+        hits = rag_query(q, k)
+    except RegulationStoreNotReady as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return RegulationSearchResponse(
+        query=q, k=k, results=[RegulationExcerpt(**h) for h in hits]
     )
 
 

@@ -41,10 +41,17 @@ def tool_query_airspace(area: str, time: str | None = None) -> dict[str, Any]:
 def tool_get_regulation(topic: str) -> dict[str, Any]:
     """get_regulation(topic) -> regulation excerpts with clause numbers (RAG).
 
-    TODO(phase-2, step 2.1): Chroma retrieval over the 20 CAD PDFs; every
-    excerpt must carry its clause number for mandatory citation.
+    Real implementation (phase-2, step 2.1): Chroma retrieval over the 20 CAD
+    PDFs; every excerpt carries its clause number for mandatory citation.
+    Falls back to an empty, clearly-marked payload until the store is seeded.
     """
-    return {"topic": topic, "excerpts": [], "note": "RAG store not seeded yet"}
+    from app.rag import RegulationStoreNotReady, query
+
+    try:
+        excerpts = query(topic, k=5)
+    except RegulationStoreNotReady:
+        return {"topic": topic, "excerpts": [], "note": "RAG store not seeded yet"}
+    return {"topic": topic, "excerpts": excerpts}
 
 
 def tool_generate_scenario(description: str) -> dict[str, Any]:

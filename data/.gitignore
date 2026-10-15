@@ -18,3 +18,7 @@ regulations/*
 
 weather/*
 !weather/.gitkeep
+
+# Vector store — rebuilt by scripts/ingest_regulations.py, never committed.
+chroma/*
+!chroma/.gitkeep
