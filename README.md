@@ -56,10 +56,15 @@ npm run dev   # http://localhost:43123
 ### Data & tests
 
 ```bash
-bash scripts/download_data.sh        # fetch datasets into data/ (see data/SOURCES.md)
-python scripts/seed_vectorstore.py   # load the regulation library (Phase 2)
-cd backend && pytest                 # backend tests
+bash scripts/download_data.sh          # fetch datasets into data/ (see data/SOURCES.md)
+python scripts/ingest_regulations.py   # build the regulation vector library into data/chroma/
+cd backend && pytest                   # backend tests
 ```
+
+The regulation library (20 CAD circulars, clause-level chunks, BAAI/bge-m3
+embeddings + Chroma) powers `GET /api/v1/regulations/search?q=...&k=5` and
+the chat layer's citations. First run downloads the ~2 GB embedding model;
+the store itself is git-ignored and rebuilt by the ingest script.
 
 Optional env vars: `NEXT_PUBLIC_CESIUM_ION_TOKEN` (Cesium ion imagery; falls back to plain OSM tiles without it), `LLM_API_KEY` (Phase-2 AI layer; Phase-0 stubs run without it).
 

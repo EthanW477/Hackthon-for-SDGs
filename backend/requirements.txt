@@ -1,6 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 pydantic==2.10.4
 pytest==8.3.4
 httpx==0.28.1
 shapely==2.0.7
+
+# RAG regulation library (phase 2, step 2.1) — CPU torch keeps images small
+pypdf==6.20.1
+chromadb==1.5.9
+sentence-transformers==6.1.0
+torch==2.14.1+cpu

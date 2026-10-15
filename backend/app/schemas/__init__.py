@@ -13,6 +13,7 @@ from app.schemas.scenario import (
     ScenarioRunResponse,
 )
 from app.schemas.airspace import AirspaceResponse, Track
+from app.schemas.regulation import RegulationExcerpt, RegulationSearchResponse
 from app.schemas.report import ReportRequest, ReportResponse
 
 __all__ = [
@@ -24,6 +25,8 @@ __all__ = [
     "FlightPlanCheckResponse",
     "FlightPlanParams",
     "MapAnnotation",
+    "RegulationExcerpt",
+    "RegulationSearchResponse",
     "ReportRequest",
     "ReportResponse",
     "RuleViolation",

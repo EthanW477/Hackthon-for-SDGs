@@ -1,23 +1,11 @@
-"""seed_vectorstore.py — load the CAD regulation PDFs into the vector store.
+"""seed_vectorstore.py — kept for muscle memory; delegates to the real
+ingest pipeline in scripts/ingest_regulations.py (phase-2, step 2.1)."""
 
-Phase 2 (step 2.1) implementation target:
-  1. Read the 20 PDFs from data/regulations/ (AC-001~017 + 3 UCA docs).
-  2. Split clause-by-clause; every chunk's metadata must carry its clause
-     number (e.g. "AC-014 para. 3.2") so answers can cite it — this is one of
-     the three anti-hallucination engineering rules (project-plan §7.0).
-  3. Embed with the local open-source bge-m3 model and store in Chroma.
-
-TODO(phase-2): implement the pipeline above, then wire app/rag/retrieve.py
-to the populated store.
-"""
-
-
-def main() -> None:
-    raise SystemExit(
-        "TODO: vector store seeding not implemented yet — "
-        "see the docstring and data/SOURCES.md"
-    )
-
+from pathlib import Path
+import runpy
+import sys
 
 if __name__ == "__main__":
-    main()
+    script = Path(__file__).with_name("ingest_regulations.py")
+    sys.argv = [str(script), *sys.argv[1:]]
+    runpy.run_path(str(script), run_name="__main__")
