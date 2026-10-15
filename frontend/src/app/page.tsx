@@ -1,5 +1,5 @@
-import ChatPanel from "@/components/ChatPanel";
 import MapPanel from "@/components/MapPanel";
+import SidePanel from "@/components/SidePanel";
 
 export default function Home() {
   return (
@@ -7,8 +7,8 @@ export default function Home() {
       <section className="relative min-h-[60vh] flex-1">
         <MapPanel />
       </section>
-      <aside className="h-[40vh] w-full border-t md:h-screen md:w-[380px] md:border-l md:border-t-0">
-        <ChatPanel />
+      <aside className="h-[40vh] w-full border-t md:h-screen md:w-[420px] md:border-l md:border-t-0">
+        <SidePanel />
       </aside>
     </main>
   );
