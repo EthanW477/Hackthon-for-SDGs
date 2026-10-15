@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sendChat, type ChatMessage } from "@/lib/api";
+import { sendChat, type ChatMessage, type Citation } from "@/lib/api";
 
 /**
  * Phase-0 chat panel: message list + input wired to the backend
@@ -20,6 +20,7 @@ export default function ChatPanel() {
   ]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [citations, setCitations] = useState<Citation[]>([]);
 
   async function onSend() {
     const text = draft.trim();
@@ -29,6 +30,7 @@ export default function ChatPanel() {
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     try {
       const res = await sendChat(text);
+      setCitations(res.citations ?? []);
       setMessages((prev) => [...prev, { role: "assistant", content: res.reply }]);
     } catch {
       setMessages((prev) => [
@@ -71,6 +73,20 @@ export default function ChatPanel() {
           </div>
         )}
       </div>
+
+      {citations.length > 0 && (
+        <div className="max-h-28 overflow-y-auto border-t bg-muted/40 px-4 py-2 text-xs">
+          <p className="mb-1 font-medium text-muted-foreground">Regulation citations</p>
+          <ul className="space-y-1">
+            {citations.map((c, i) => (
+              <li key={`${c.regulation_id}-${i}`}>
+                <span className="font-mono">{c.regulation_id}</span>
+                {c.section ? ` · ${c.section}` : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <form
         className="flex gap-2 border-t p-3"

@@ -78,11 +78,14 @@ export interface Track {
 
 // ---------- endpoints ----------
 
-export async function sendChat(message: string): Promise<ChatResponse> {
+export async function sendChat(
+  message: string,
+  route?: Record<string, unknown> | null,
+): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/v1/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, route: route ?? undefined }),
   });
   if (!res.ok) throw new Error(`chat failed: ${res.status}`);
   return res.json();

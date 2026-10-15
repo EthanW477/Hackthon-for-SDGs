@@ -8,8 +8,26 @@ See docs/dev-readme.md §5 for the API contract.
 """
 
 import json
+import os
 import uuid
 from collections.abc import AsyncGenerator
+from pathlib import Path
+
+
+def _load_backend_dotenv() -> None:
+    env_path = Path(__file__).resolve().parents[1] / ".env"
+    if not env_path.is_file():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_backend_dotenv()
+
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +52,7 @@ from app.schemas import (
     ScenarioRunResponse,
     Suggestion,
 )
+from app.ai.agent import run_chat
 from app.simulator import generate_tracks, parse_fault_specs, stream_tracks
 
 app = FastAPI(title="UTM Copilot API", version="0.1.0")
@@ -59,20 +78,11 @@ def health() -> dict[str, str]:
 
 @app.post("/api/v1/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
-    """Natural-language entry point.
-
-    TODO(phase-2, step 2.2): route through the LLM tool-calling loop
-    (app/ai/). For now returns a canned, contract-shaped reply.
-    """
-    return ChatResponse(
-        reply=(
-            "UTM Copilot stub: I received your message "
-            f"({req.message[:80]}). The AI layer lands in Phase 2 — "
-            "meanwhile use /api/v1/flight-plans/check for route checks."
-        ),
-        map_annotations=[],
-        citations=[],
-    )
+    """Natural-language entry point — Kimi/DeepSeek tool-calling loop (app/ai/)."""
+    try:
+        return run_chat(req.message, route=req.route)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post("/api/v1/flight-plans/check", response_model=FlightPlanCheckResponse)
