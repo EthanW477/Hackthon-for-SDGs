@@ -17,4 +17,7 @@ if (!existsSync(src)) {
 for (const dir of ["Assets", "ThirdParty", "Widgets", "Workers"]) {
   cpSync(join(src, dir), join(dest, dir), { recursive: true });
 }
+// The app loads the prebuilt bundle via <script src="/cesium/Cesium.js">
+// (see src/lib/cesium-loader.ts) instead of bundling cesium/Source.
+cpSync(join(src, "Cesium.js"), join(dest, "Cesium.js"));
 console.log("[cesium] static assets copied to public/cesium");

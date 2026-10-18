@@ -5,6 +5,7 @@ import type { CustomDataSource, Viewer } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { checkFlightPlan, type FlightPlanCheckResponse } from "@/lib/api";
 import { loadRfzLayer, type CesiumModule } from "@/lib/rfz";
+import { loadCesium } from "@/lib/cesium-loader";
 import { RouteDrawer } from "@/lib/route-drawer";
 import MapToolbar from "./MapToolbar";
 import VerdictCard from "./VerdictCard";
@@ -52,7 +53,7 @@ export default function MapView() {
     async function boot() {
       // Must be set before the cesium module is evaluated.
       (window as unknown as Record<string, unknown>).CESIUM_BASE_URL = "/cesium/";
-      const Cesium = await import("cesium");
+      const Cesium = await loadCesium();
       if (cancelled || !containerRef.current) return;
       cesiumRef.current = Cesium;
 
