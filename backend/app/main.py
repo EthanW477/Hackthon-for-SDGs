@@ -11,6 +11,7 @@ import json
 import os
 import uuid
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 
@@ -35,6 +36,7 @@ from fastapi.responses import StreamingResponse
 
 from app.rag import RegulationStoreNotReady
 from app.rag import query as rag_query
+from app.rag.bootstrap import maybe_auto_ingest
 from app.rules_engine import evaluate_flight_plan
 from app.schemas import (
     AirspaceResponse,
@@ -67,7 +69,16 @@ from app.scenarios import (
 )
 from app.simulator import generate_tracks, parse_fault_specs, stream_tracks
 
-app = FastAPI(title="UTM Copilot API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    # Self-healing vector library: when the Chroma store is empty and
+    # REGULATIONS_DIR points at regulation PDFs, ingest in a background
+    # thread (no-op without the env var — local dev and tests unaffected).
+    maybe_auto_ingest()
+    yield
+
+
+app = FastAPI(title="UTM Copilot API", version="0.1.0", lifespan=lifespan)
 
 # The Next.js dev server / container calls from the browser; allow all origins
 # in Phase 0, tighten before any real deployment.

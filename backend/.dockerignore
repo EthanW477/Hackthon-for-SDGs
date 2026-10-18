@@ -1,0 +1,6 @@
+# Keep secrets and local artifacts out of the build context / image.
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
