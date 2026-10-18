@@ -5,7 +5,12 @@ const nextConfig: NextConfig = {
   // changes every run — allow any *.trycloudflare.com origin instead of
   // committing an ephemeral hostname. Without this Next 16 blocks the HMR
   // websocket and the tunnel preview hangs. (Matches hostname only.)
-  allowedDevOrigins: ["127.0.0.1", "localhost", "*.trycloudflare.com"],
+  allowedDevOrigins: [
+    "127.0.0.1",
+    "localhost",
+    "*.trycloudflare.com",
+    "hardening-thinly-deferred.ngrok-free.dev",
+  ],
   // Dev-only same-origin proxy: with NEXT_PUBLIC_API_URL="" (see
   // .env.example) the browser calls /api/* on the frontend origin and the
   // dev server forwards it to the local backend, so one public URL serves
